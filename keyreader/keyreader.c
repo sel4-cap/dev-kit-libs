@@ -34,11 +34,6 @@ void handle_keypress(void) {
             printf("Received character: %c\n", c, stdout);
 
             microkit_ppcall(5, seL4_MessageInfo_new((uint64_t) c,1,0,0));
-            
-            // Add character to MMC buffer
-            if (mmc_pending_length < MMC_TX_BUF_LEN) {
-                mmc_pending_tx_buf[mmc_pending_length++] = c;
-            }
         }
         udelay(10000);
     }

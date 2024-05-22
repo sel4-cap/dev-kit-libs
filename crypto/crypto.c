@@ -43,6 +43,10 @@ uintptr_t rx_cookies;
 uintptr_t tx_cookies;
 uintptr_t kbd_ring_buffer_vaddr;
 uintptr_t kbd_ring_buffer_paddr;
+uintptr_t rx_free;
+uintptr_t rx_used;
+uintptr_t tx_free;
+uintptr_t tx_used;
 
 
 /* A buffer of encrypted characters to log to the SD/MMC card */
@@ -50,7 +54,7 @@ uintptr_t kbd_ring_buffer_paddr;
 uintptr_t data_packet;
 char* mmc_pending_tx_buf = (void *)(uintptr_t)0x5011000;
 // NEED TO CHANGE TO PROPER LENGTH
-uint mmc_pending_length = 7;
+uint mmc_pending_length = 0;
 
 #define MAX_KEYS 256
 #define TX_COUNT 256
@@ -131,17 +135,28 @@ void handle_character(char c){
     char encrypted_char = rot_13(c);
 
     printf("Encrypted char %c\n", encrypted_char);
+    
+    microkit_ppcall(6, seL4_MessageInfo_new((uint64_t) encrypted_char,1,0,0));
+
+    mmc_pending_tx_buf[mmc_pending_length] = encrypted_char;
+
+    mmc_pending_length++;
 
 }
 
+void
+init_post()
+{
+    /* Set up shared memory regions */
+    // ring_init(kbd_buffer_ring, (ring_buffer_t *)rx_free, (ring_buffer_t *)rx_used, NULL, 0);
 
+    // fill_rx_bufs();]
 
+    return 0;
+}
 
 void init()
 {
-    for (size_t i = 0; i < mmc_pending_length; i++) {
-        mmc_pending_tx_buf[i] = rot_13(mmc_pending_tx_buf[i]);
-    }
 
     kbd_buffer_ring = malloc(sizeof(*kbd_buffer_ring));
     ring_setup();
