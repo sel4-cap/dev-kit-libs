@@ -49,6 +49,11 @@ endif()
 # Add libraries 
 add_subdirectory(libubootdrivers)
 add_subdirectory(libutils)
+add_subdirectory(libmicrokitdma)
+target_include_directories(microkitdma PUBLIC 
+    "${BOARD_DIR}/include" 
+    "libubootdrivers/include/public_api/"
+    "${PICOLIBC_DIR}/include/")
 add_subdirectory(libmicrokitdma_keyreader)
 target_include_directories(microkitdma_keyreader PUBLIC 
     "${BOARD_DIR}/include" 

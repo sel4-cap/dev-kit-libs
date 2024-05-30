@@ -39,6 +39,28 @@ uintptr_t dma_base_2;
 uintptr_t dma_cp_paddr_2;
 size_t dma_size = 0x100000;
 
+// fdt initialise 
+#define STR2(x) #x
+#define STR(x) STR2(x)
+#define INCBIN_SECTION ".rodata"
+#define INCBIN(name, file) \
+    __asm__(".section " INCBIN_SECTION "\n" \
+            ".global incbin_" STR(name) "_start\n" \
+            ".balign 16\n" \
+            "incbin_" STR(name) "_start:\n" \
+            ".incbin \"" file "\"\n" \
+            \
+            ".global incbin_" STR(name) "_end\n" \
+            ".balign 1\n" \
+            "incbin_" STR(name) "_end:\n" \
+            ".byte 0\n" \
+    ); \
+    extern __attribute__((aligned(16))) const char incbin_ ## name ## _start[]; \
+    extern                              const char incbin_ ## name ## _end[] 
+INCBIN(device_tree, DTB_PATH); 
+
+const char* _end = incbin_device_tree_end;
+
 void write_pending_mmc_log()
 {
     printf("mmc buffer %c\n", mmc_pending_tx_buf[0]);
@@ -107,67 +129,6 @@ init_post(void)
     const char *const_dev_paths[] = DEV_PATHS;
 
     // Initalise DMA manager
-    // microkit_dma_manager(&dma_manager);
-
-    // // Initialise DMA
-    // microkit_dma_init(dma_base_2, dma_size,
-    //     4096, 1);
-
-    // // Initialise uboot library
-    // initialise_uboot_drivers(
-    // dma_manager,
-    // incbin_device_tree_start,
-    // /* List the device tree paths for the devices */
-    // const_dev_paths, DEV_PATH_COUNT);
-
-     /* Delete any existing log file to ensure we start with an empty file */
-    // char uboot_cmd[64];
-    // sprintf(uboot_cmd, "fatrm %s %s", LOG_FILE_DEVICE, LOG_FILENAME);
-    // run_uboot_command(uboot_cmd);
-
-
-    /* Now poll for events and handle them */
-    bool idle_cycle;
-    unsigned long last_log_file_write_time = 0;
-
-    circular_buffer_t* cb = (circular_buffer_t*)circular_buffer;
-
-    while(true) {
-        // printf("In while loop\n");
-        idle_cycle = true;
-
-        /* Process notification of receipt of encrypted characters */
-        if (cb->lock == false && !circular_buffer_empty(cb)) {
-            idle_cycle = false;
-            recieve_data_from_cypto();
-        }
-
-        /* Write any received encrypted characters to the log file (if sufficient
-         * time has passed from the previous write) */
-        if (mmc_pending_length > 0 &&
-               (uboot_monotonic_timer_get_us() - last_log_file_write_time) >= LOG_FILE_WRITE_PERIOD_US) {
-            idle_cycle = false;
-            last_log_file_write_time = uboot_monotonic_timer_get_us();
-            write_pending_mmc_log();
-            // microkit_notify(7);
-            break;
-        }
-
-        /* Sleep on idle cycles to prevent busy looping */
-        if (idle_cycle) {
-            mdelay(10);
-        }
-    }
-
-    return 0;
-}
-
-void
-init(void)
-{
-    const char *const_dev_paths[] = DEV_PATHS;
-
-    // Initalise DMA manager
     microkit_dma_manager(&dma_manager);
 
     // Initialise DMA
@@ -181,6 +142,21 @@ init(void)
     /* List the device tree paths for the devices */
     const_dev_paths, DEV_PATH_COUNT);
 
+
+     /* Delete any existing log file to ensure we start with an empty file */
+    char uboot_cmd[64];
+    sprintf(uboot_cmd, "fatrm %s %s", LOG_FILE_DEVICE, LOG_FILENAME);
+    run_uboot_command(uboot_cmd);
+
+    recieve_data_from_cypto();
+    write_pending_mmc_log();
+
+    return 0;
+}
+
+void
+init(void)
+{
 }
 
 void

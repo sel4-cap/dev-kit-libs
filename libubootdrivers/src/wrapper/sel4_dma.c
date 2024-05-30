@@ -8,9 +8,6 @@
 #include <io_dma.h>
 #include <linux/dma-direction.h>
 
-extern uintptr_t dma_base;
-extern uintptr_t dma_cp_paddr;
-
 #define MAX_DMA_ALLOCS 256
 
 struct dma_allocation_t {

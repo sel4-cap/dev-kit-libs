@@ -58,12 +58,6 @@ void write_buffer(uintptr_t memory_region, char encrypted_char){
     circular_buffer_put(circular_buffer, encrypted_char);
 
     cb->lock = false;
-
-    if (circular_buffer_full(cb)){
-        microkit_notify(6);
-    }
-
-    microkit_notify(5);
 }
 
 void handle_character(char c){
@@ -77,7 +71,7 @@ void handle_character(char c){
 
 void init()
 { 
-    size_t buffer_size = 5;
+    size_t buffer_size = 100;
     circular_buffer = circular_buffer_init(circular_buffer, buffer_size, data_buffer);
 }
 
@@ -86,7 +80,8 @@ notified(microkit_channel ch)
 {
     switch (ch){
         case 5:
-        printf("In crytp notified\n");
+        printf("In crypto notified\n");
+        microkit_notify(6);
     }
 }
 
